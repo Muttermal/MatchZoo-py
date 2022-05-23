@@ -54,7 +54,9 @@ class Dataset(data.Dataset):
         resample: bool = False,
         shuffle: bool = True,
         sort: bool = False,
-        callbacks: typing.List[BaseCallback] = None
+        callbacks: typing.List[BaseCallback] = None,
+        get_twice: bool = False,
+        **kwargs
     ):
         """Init."""
         if callbacks is None:
@@ -78,6 +80,7 @@ class Dataset(data.Dataset):
         self._sort = sort
         self._orig_relation = data_pack.relation
         self._callbacks = callbacks
+        self._get_twice = get_twice
 
         if mode == 'pair':
             data_pack.relation = self._reorganize_pair_wise(
@@ -180,7 +183,13 @@ class Dataset(data.Dataset):
         for i in range(math.ceil(num_instances / self._batch_size)):
             lower = self._batch_size * i
             upper = self._batch_size * (i + 1)
-            candidates = index_pool[lower:upper]
+            if self._get_twice:
+                candidates = []
+                for inx in range(lower, upper // 2):
+                    candidates.append(index_pool[inx])
+                    candidates.append(index_pool[inx])
+            else:
+                candidates = index_pool[lower:upper]
             if self._mode == 'pair':
                 candidates = sum(candidates, [])
             self._batch_indices.append(candidates)

@@ -56,6 +56,7 @@ class DataLoader(object):
         timeout: int = 0,
         num_workers: int = 0,
         worker_init_fn=None,
+        **kwargs
     ):
         """Init."""
         if stage not in ('train', 'dev', 'test'):

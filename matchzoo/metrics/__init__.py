@@ -5,6 +5,7 @@ from .mean_reciprocal_rank import MeanReciprocalRank
 from .mean_average_precision import MeanAveragePrecision
 from .normalized_discounted_cumulative_gain import \
     NormalizedDiscountedCumulativeGain
+from .corrcoef import Spearmanr
 
 from .accuracy import Accuracy
 from .cross_entropy import CrossEntropy

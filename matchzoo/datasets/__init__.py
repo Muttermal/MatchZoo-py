@@ -1,5 +1,4 @@
-from . import toy
-from . import wiki_qa
+from . import load_data
 from . import embeddings
 from . import snli
 from . import quora_qp

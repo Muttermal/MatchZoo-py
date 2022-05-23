@@ -1,0 +1,94 @@
+phase: train
+
+task:
+  name: Ranking
+
+metrics:
+  - name: Spearmanr
+  - name: MeanAveragePrecision
+    params:
+      threshold: 0.1
+
+losses:
+  - name: ContrastiveLoss
+    params:
+      is_supervised: true
+      alpha: 0.1
+
+model:
+  name: Bert
+  params:
+    mode: ../huggingface/chinese-roberta-wwm-ext
+    dropout_rate: 0.1
+    pooling_mode: mean
+    out_type: supervised
+
+preprocessor:
+  name: BertPreprocessor
+  params:
+    mode: ../huggingface/chinese-roberta-wwm-ext
+
+callback:
+  name: BertPadding
+  params:
+    pad_mode: post
+    pad_value: 0
+    fixed_length_left: 20
+    fixed_length_right: 20
+
+dataset:
+  train:
+    data_root: ./data/test_data
+    mode: pair
+    num_dup: 1
+    num_neg: 1
+    batch_size: 8
+    resample: false
+    shuffle: true
+    sort: false
+  dev:
+    data_root: ./data/test_data
+    mode: pair
+    num_dup: 1
+    num_neg: 1
+    batch_size: 8
+    resample: false
+    shuffle: true
+    sort: false
+  test:
+    data_root: ./data/test_data
+    mode: pair
+    batch_size: 8
+    resample: false
+    shuffle: false
+    sort: false
+
+optimizer:
+  name: AdamW
+  no_decay: ['bias', 'LayerNorm.weight']
+  params:
+    lr: 5.0e-5
+    betas: !!python/tuple [0.9, 0.98] # python tuple形式,加了这个后无法用safe_load来加载
+    eps: 1.0e-8
+
+#scheduler:
+#  name: WarmUp
+#  params:
+#    warmup_steps: 6
+#    t_total: -1
+
+trainer:
+  train:
+    epochs: 10
+    patience: 3
+    clip_norm: 1.0
+#    key: Spearmanr
+    save_dir: ./saved_model/test_models
+    save_all: false
+  predict:
+    key: Spearmanr
+
+service:
+  device: cuda
+  gpu_id: 0
+

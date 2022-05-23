@@ -1,6 +1,6 @@
 """Bert Preprocessor."""
 
-from pytorch_transformers import BertTokenizer
+from transformers import AutoTokenizer
 
 from . import units
 from matchzoo import DataPack
@@ -19,7 +19,7 @@ class BertPreprocessor(BasePreprocessor):
     def __init__(self, mode: str = 'bert-base-uncased'):
         """Initialization."""
         super().__init__()
-        self._tokenizer = BertTokenizer.from_pretrained(mode)
+        self._tokenizer = AutoTokenizer.from_pretrained(mode)
 
     def fit(self, data_pack: DataPack, verbose: int = 1):
         """Tokenizer is all BertPreprocessor's need."""

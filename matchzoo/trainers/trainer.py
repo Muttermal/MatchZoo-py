@@ -240,7 +240,7 @@ class Trainer:
 
         The training steps:
             - Get batch and feed them into model
-            - Get outputs. Caculate all losses and sum them up
+            - Get outputs. Calculate all losses and sum them up
             - Loss backwards and optimizer steps
             - Evaluation
             - Update and output result
@@ -252,8 +252,9 @@ class Trainer:
         with tqdm(enumerate(self._trainloader), total=num_batch,
                   disable=not self._verbose) as pbar:
             for step, (inputs, target) in pbar:
+                # inputs结构: [(a, a+), (a, a-), (b, b+), (b, b-), ...] 先正样本后负样本
                 outputs = self._model(inputs)
-                # Caculate all losses and sum them up
+                # Calculate all losses and sum them up
                 loss = torch.sum(
                     *[c(outputs, target) for c in self._criterions]
                 )
@@ -272,10 +273,12 @@ class Trainer:
                         pbar.write(
                             f'[Iter-{self._iteration} '
                             f'Loss-{train_loss.avg:.3f}]:')
-                    result = self.evaluate(self._validloader)
+                    result = self.evaluate(self._validloader, do_eval=True)
                     if self._verbose:
-                        pbar.write('  Validation: ' + ' - '.join(
-                            f'{k}: {round(v, 4)}' for k, v in result.items()))
+                        std_info = '  Validation: ' + ' - '.join(
+                            f'{k}: {round(v, 4)}' for k, v in result.items())
+                        pbar.write(std_info)
+                        pbar.write(std_info, file=self._save_dir.joinpath('logger.txt'))
                     # Early stopping
                     self._early_stopping.update(result)
                     if self._early_stopping.is_best_so_far:
@@ -287,16 +290,19 @@ class Trainer:
     def evaluate(
         self,
         dataloader: DataLoader,
+        do_eval: bool = False,
     ):
         """
         Evaluate the model.
 
         :param dataloader: A DataLoader object to iterate over the data.
-
+        :param do_eval: do evaluation
         """
         result = dict()
-        y_pred = self.predict(dataloader)
+        y_pred = self.predict(dataloader, do_eval)
         y_true = dataloader.label
+        if y_pred.shape != y_true.shape:
+            y_pred = y_pred.squeeze(axis=-1)
         id_left = dataloader.id_left
 
         if isinstance(self._task, tasks.Classification):
@@ -305,7 +311,7 @@ class Trainer:
         else:
             for metric in self._task.metrics:
                 result[metric] = self._eval_metric_on_data_frame(
-                    metric, id_left, y_true, y_pred.squeeze(axis=-1))
+                    metric, id_left, y_true, y_pred)
         return result
 
     @classmethod
@@ -342,12 +348,14 @@ class Trainer:
 
     def predict(
         self,
-        dataloader: DataLoader
+        dataloader: DataLoader,
+        do_eval: bool = False,
     ) -> np.array:
         """
         Generate output predictions for the input samples.
 
         :param dataloader: input DataLoader
+        :param do_eval: whether do eval or not
         :return: predictions
 
         """
@@ -356,7 +364,7 @@ class Trainer:
             predictions = []
             for batch in dataloader:
                 inputs = batch[0]
-                outputs = self._model(inputs).detach().cpu()
+                outputs = self._model(inputs, do_eval).detach().cpu()
                 predictions.append(outputs)
             self._model.train()
             return torch.cat(predictions, dim=0).numpy()
